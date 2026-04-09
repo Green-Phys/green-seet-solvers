@@ -166,8 +166,8 @@ int main(int argc, const char ** argv) {
           for(size_t jo = 0, jor = 0; jo < nio; ++jo, jor += 2) {
             A << 1.0, iwn, iwn*iwn,  1.0, iwn1, iwn1*iwn1,  1.0, iwn2, iwn2*iwn2;
             B(0,0) = std::complex<double>(Sigma_ij(nw-1, is, io, jor), Sigma_ij(nw-1, is, io, jor + 1));
-            B(1,0) = std::complex<double>(Sigma_ij(nw-1, is, io, jor), Sigma_ij(nw-1, is, io, jor + 1));
-            B(2,0) = std::complex<double>(Sigma_ij(nw-1, is, io, jor), Sigma_ij(nw-1, is, io, jor + 1));
+            B(1,0) = std::complex<double>(Sigma_ij(nw-2, is, io, jor), Sigma_ij(nw-2, is, io, jor + 1));
+            B(2,0) = std::complex<double>(Sigma_ij(nw-3, is, io, jor), Sigma_ij(nw-3, is, io, jor + 1));
             MatrixXcd X = A.colPivHouseholderQr().solve(B).eval();
             Sigma_inf_ij(is, io, jo) = X(0,0).real();
             for(size_t iw = 0; iw < nw; ++iw) {
