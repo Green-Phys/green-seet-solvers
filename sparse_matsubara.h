@@ -1,160 +1,80 @@
-#ifndef SPARSE_MATSUBARA_H
-#define SPARSE_MATSUBARA_H
+#ifndef SEET_SPARSE_MATSUBARA_H
+#define SEET_SPARSE_MATSUBARA_H
 
+#include <cmath>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-#ifdef ALPS_HAVE_MPI
-#include <alps/gf/mpi_bcast.hpp>
-#endif
-#include <alps/gf/mesh/index.hpp>
-#include <alps/gf/mesh/mesh_base.hpp>
+#include <green/h5pp/archive.h>
+#include <green/params/params.h>
+
+#include <edlib/Mesh.h>
 
 namespace seet {
-  class sparse_matsubara_mesh : public alps::gf::base_mesh {
-    double beta_;
-    int nfreq_;
 
-    alps::gf::statistics::statistics_type statistics_;
+  /**
+   * Matsubara-style mesh whose frequency grid is a caller-supplied sparse list
+   * of Matsubara indices (read from an external HDF5 dataset). Carries no
+   * ALPSCore types — uses edlib::Statistics and is consumed by the
+   * EDLib::core templates that take a mesh instance directly.
+   */
+  class sparse_matsubara_mesh {
+  public:
+    sparse_matsubara_mesh() = default;
 
-    inline void throw_if_empty() const {
-      if (extent() == 0) {
-        throw std::runtime_error("matsubara_mesh is empty");
+    sparse_matsubara_mesh(double beta, std::vector<double> points,
+                          edlib::Statistics stat = edlib::Statistics::Fermionic)
+        : _beta(beta), _points(std::move(points)), _stat(stat) {
+      if (_beta <= 0.0) {
+        throw std::invalid_argument("sparse_matsubara_mesh: beta must be positive");
+      }
+      if (_points.empty()) {
+        throw std::invalid_argument("sparse_matsubara_mesh: points must be non-empty");
       }
     }
 
-  public:
-    typedef alps::gf::generic_index<sparse_matsubara_mesh> index_type;
-    /// copy constructor
-    sparse_matsubara_mesh(const sparse_matsubara_mesh& rhs) : alps::gf::base_mesh(rhs), beta_(rhs.beta_), nfreq_(rhs.nfreq_), statistics_(rhs.statistics_) {check_range();}
-    sparse_matsubara_mesh():
-        beta_(0.0), nfreq_(0), statistics_(alps::gf::statistics::FERMIONIC)
-    {
-    }
+    double                     beta()       const { return _beta; }
+    int                        extent()     const { return static_cast<int>(_points.size()); }
+    edlib::Statistics          statistics() const { return _stat; }
+    const std::vector<double>& points()     const { return _points; }
 
-    sparse_matsubara_mesh(double b, const std::vector<double> &points, alps::gf::statistics::statistics_type statistics=alps::gf::statistics::FERMIONIC):
-        beta_(b), nfreq_(points.size()), statistics_(statistics) {
-      _points().resize(nfreq_);
-      std::copy(points.begin(), points.end(), _points().begin());
-      check_range();
-    }
-    int extent() const{return nfreq_;}
-
-
-    int operator()(index_type idx) const {
-#ifndef NDEBUG
-      throw_if_empty();
-#endif
-      return idx();
-    }
-
-    /// Comparison operators
-    bool operator==(const sparse_matsubara_mesh &mesh) const {
-      throw_if_empty();
-      return beta_==mesh.beta_ && nfreq_==mesh.nfreq_ && statistics_==mesh.statistics_;
-    }
-
-    /// Comparison operators
-    bool operator!=(const sparse_matsubara_mesh &mesh) const {
-      throw_if_empty();
-      return !(*this==mesh);
-    }
-
-    ///getter functions for member variables
-    double beta() const{ return beta_;}
-    alps::gf::statistics::statistics_type statistics() const{ return statistics_;}
-
-    /// Swaps this and another mesh
-    // It's a member function to avoid dealing with templated friend decalration.
-    void swap(sparse_matsubara_mesh& other) {
-      throw_if_empty();
-      if(statistics_!=other.statistics_)
-        throw std::runtime_error("Attempt to swap two meshes with different statistics.");// FIXME: specific exception
-      std::swap(this->beta_, other.beta_);
-      std::swap(this->nfreq_, other.nfreq_);
-      base_mesh::swap(other);
-    }
-
-    void save(alps::hdf5::archive& ar, const std::string& path) const
-    {
-      throw_if_empty();
-      ar[path+"/kind"] << "MATSUBARA";
-      ar[path+"/N"] << nfreq_;
-      ar[path+"/statistics"] << int(statistics_); //
-      ar[path+"/beta"] << beta_;
-      ar[path+"/points"] << points();
-    }
-
-    void load(alps::hdf5::archive& ar, const std::string& path)
-    {
-      std::string kind;
-      ar[path+"/kind"] >> kind;
-      if (kind!="SPARSE_MATSUBARA") throw std::runtime_error("Attempt to read Matsubara mesh from non-Matsubara data, kind="+kind); // FIXME: specific exception
-      double nfr, beta;
-      int stat, posonly;
-
-      ar[path+"/N"] >> nfr;
-      ar[path+"/statistics"] >> stat;
-      ar[path+"/beta"] >> beta;
-      ar[path+"/points"] >> _points();
-
-      statistics_=alps::gf::statistics::statistics_type(stat);
-      beta_=beta;
-      nfreq_=nfr;
-      check_range();
-    }
-
-    /// Save to HDF5
-    void save(alps::hdf5::archive& ar) const
-    {
-      save(ar, ar.get_context());
-    }
-
-    /// Load from HDF5
-    void load(alps::hdf5::archive& ar)
-    {
-      load(ar, ar.get_context());
-    }
-
-#ifdef ALPS_HAVE_MPI
-    void broadcast(const alps::mpi::communicator& comm, int root)
-    {
-    }
-#endif
-
-    void check_range(){
-      if(statistics_!=alps::gf::statistics::FERMIONIC && statistics_!=alps::gf::statistics::BOSONIC) throw std::invalid_argument("statistics should be bosonic or fermionic");
-      throw_if_empty();
-    }
-
+  private:
+    double                _beta = 0.0;
+    std::vector<double>   _points;
+    edlib::Statistics     _stat = edlib::Statistics::Fermionic;
   };
-  ///Stream output operator, e.g. for printing to file
-  std::ostream &operator<<(std::ostream &os, const sparse_matsubara_mesh &M){
-    os<<"# "<<"MATSUBARA"<<" mesh: N: "<<M.extent()<<" beta: "<<M.beta()<<" statistics: ";
-    os<<(M.statistics()==alps::gf::statistics::FERMIONIC?"FERMIONIC":"BOSONIC")<<" ";
-    os<<std::endl;
-    return os;
-  }
 
-  /// Swaps two Matsubara meshes
-  void swap(sparse_matsubara_mesh& a, sparse_matsubara_mesh& b) {
-    a.swap(b);
-  }
-
+  /**
+   * Build a sparse_matsubara_mesh from green-params + green-h5pp. The HDF5
+   * file referenced by FREQ_FILE stores a 1-D dataset of Matsubara indices at
+   * FREQ_PATH; we convert them to angular frequencies for beta from lanc.BETA.
+   */
   class SparseMeshFactory {
   public:
     using MeshType = sparse_matsubara_mesh;
-    static MeshType createMesh(alps::params &p, alps::gf::statistics::statistics_type type) {
-      std::vector<double> omegas;
+
+    static MeshType createMesh(green::params::params& p, edlib::Statistics stat) {
+      const std::string file = p["FREQ_FILE"].as<std::string>();
+      const std::string path = p["FREQ_PATH"].as<std::string>();
+      const double      beta = p["lanc.BETA"].as<double>();
+
       std::vector<int> ns;
-      std::string file = p["FREQ_FILE"].as<std::string>();
-      std::string path = p["FREQ_PATH"].as<std::string>();
-      double beta = p["lanc.BETA"];
-      alps::hdf5::archive ar(file, "r");
+      green::h5pp::archive ar(file, "r");
       ar[path] >> ns;
-      for(auto n : ns) {
-        omegas.push_back((2*n+1)*M_PI/beta);
+      ar.close();
+
+      const int shift = (stat == edlib::Statistics::Fermionic) ? 1 : 0;
+      std::vector<double> omegas;
+      omegas.reserve(ns.size());
+      for (int n : ns) {
+        omegas.push_back((2 * n + shift) * M_PI / beta);
       }
-      return std::move(sparse_matsubara_mesh(beta, omegas, type));
+      return sparse_matsubara_mesh(beta, std::move(omegas), stat);
     }
   };
-}
-#endif
+
+}  // namespace seet
+
+#endif  // SEET_SPARSE_MATSUBARA_H

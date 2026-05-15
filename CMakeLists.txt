@@ -1,52 +1,42 @@
-cmake_minimum_required(VERSION 3.15)
-project(EDLibExamples LANGUAGES C CXX Fortran
+cmake_minimum_required(VERSION 3.18)
+project(GreenSeetSolvers LANGUAGES C CXX
         VERSION 2.0)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-find_package(ALPSCore COMPONENTS params hdf5 gf REQUIRED)
-find_package(ARPACK REQUIRED)
 find_package(BLAS)
 find_package(LAPACK)
 find_package(Eigen3 REQUIRED)
+
+include(GreenDeps)
 include(EDLibDep)
 
 option(USE_MPI "Use MPI for ED" OFF)
 if(USE_MPI)
-find_package(MPI REQUIRED)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_MPI")
-endif(USE_MPI)
+    find_package(MPI REQUIRED)
+    add_compile_definitions(USE_MPI)
+endif()
 
+add_green_dependency(green-h5pp)
+add_green_dependency(green-params)
 add_edlib_dependency()
 
-set(extlibs
-    ${Boost_LIBRARIES}
-    ${HDF5_LIBRARIES}
-    ${ALPSCore_LIBRARIES}
-    ${ARPACK_LIB}
-    ${BLAS_LIBRARIES}
-    ${LAPACK_LIBRARIES}
-    EDLib::EDLib EDLib::common-lib
-    )
-
-if(USE_MPI)
-  set(parlibs
-    ${PARPACK_LIB}
-    ${MPI_CXX_LIBRARIES}
-    ${MPI_Fortran_LIBRARIES}
-    )
-endif(USE_MPI)
-
 add_executable(ed_solver Anderson.cpp)
-
-target_link_libraries(ed_solver ${extlibs} Eigen3::Eigen)
+target_link_libraries(ed_solver PRIVATE
+    EDLib::EDLib
+    GREEN::H5PP
+    GREEN::PARAMS
+    Eigen3::Eigen
+    ${BLAS_LIBRARIES}
+    ${LAPACK_LIBRARIES})
 
 if(USE_MPI)
-  target_link_libraries(ed_solver ${parlibs})
-endif(USE_MPI)
+    target_link_libraries(ed_solver PRIVATE
+        MPI::MPI_CXX)
+endif()
 
 install(TARGETS ed_solver DESTINATION bin)
