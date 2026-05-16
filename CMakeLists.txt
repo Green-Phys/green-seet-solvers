@@ -25,8 +25,9 @@ add_green_dependency(green-h5pp)
 add_green_dependency(green-params)
 add_edlib_dependency()
 
-add_executable(ed_solver Anderson.cpp)
-target_link_libraries(ed_solver PRIVATE
+add_library(green_seet_solver STATIC seet_solver.cpp)
+target_include_directories(green_seet_solver PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(green_seet_solver PUBLIC
     EDLib::EDLib
     GREEN::H5PP
     GREEN::PARAMS
@@ -35,8 +36,17 @@ target_link_libraries(ed_solver PRIVATE
     ${LAPACK_LIBRARIES})
 
 if(USE_MPI)
-    target_link_libraries(ed_solver PRIVATE
-        MPI::MPI_CXX)
+    target_link_libraries(green_seet_solver PUBLIC MPI::MPI_CXX)
 endif()
 
+add_executable(ed_solver Anderson.cpp)
+target_link_libraries(ed_solver PRIVATE green_seet_solver)
+
 install(TARGETS ed_solver DESTINATION bin)
+
+option(Build_Tests "Build green-seet-solvers tests" OFF)
+message(STATUS "Building tests ${Build_Tests}")
+if(Build_Tests)
+    enable_testing()
+    add_subdirectory(test)
+endif()
