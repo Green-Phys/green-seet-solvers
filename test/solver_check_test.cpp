@@ -45,7 +45,7 @@ namespace {
         "--storage.MAX_DIM",   "64",
         "--storage.MAX_SIZE",  "4096",
         "--REAL_FREQ",         "0",
-        "--COMPUTE_SIGMA",     "0",
+        "--COMPUTE_SIGMA",     "1",
         "--INPUT_FILE",        DATA_INPUT_PATH,
         "--FREQ_FILE",         DATA_FREQ_PATH,
         "--FREQ_PATH",         "fermi/wsample",
