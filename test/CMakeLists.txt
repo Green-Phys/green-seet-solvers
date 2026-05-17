@@ -36,6 +36,6 @@ target_compile_definitions(solver_check_test PRIVATE
     SIM_H5_PATH="${_sim_out}")
 target_link_libraries(solver_check_test PRIVATE
     Catch2::Catch2WithMain
-    green_seet_solver)
+    green_seet_ed_solver)
 
 catch_discover_tests(solver_check_test)

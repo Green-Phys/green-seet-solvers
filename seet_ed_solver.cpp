@@ -1,8 +1,8 @@
 //
 // SEET ED impurity solver core (alpscore-free). The interface in
-// seet_solver.h hides everything below from main()/tests.
+// seet_ed_solver.h hides everything below from main()/tests.
 //
-#include "seet_solver.h"
+#include "seet_ed_solver.h"
 
 #include <algorithm>
 #include <array>

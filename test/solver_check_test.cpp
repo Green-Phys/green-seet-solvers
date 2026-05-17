@@ -13,7 +13,7 @@
 #include <green/h5pp/archive.h>
 #include <green/params/params.h>
 
-#include "seet_solver.h"
+#include "seet_ed_solver.h"
 
 namespace {
 

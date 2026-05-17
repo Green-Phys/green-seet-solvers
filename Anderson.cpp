@@ -1,6 +1,6 @@
 //
 // SEET ED impurity solver — command-line entry point. All real work lives
-// in seet_solver.{h,cpp}; this file only parses argv, drives MPI, and
+// in seet_ed_solver.{h,cpp}; this file only parses argv, drives MPI, and
 // flushes the input/output files around the call.
 //
 #include <chrono>
@@ -11,7 +11,7 @@
 
 #include <green/params/params.h>
 
-#include "seet_solver.h"
+#include "seet_ed_solver.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
