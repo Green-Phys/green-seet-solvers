@@ -10,7 +10,7 @@ function(add_edlib_dependency)
     FetchContent_Declare(
         EDLib
         GIT_REPOSITORY https://github.com/Q-Solvers/EDLib.git
-        GIT_TAG origin/remove-alpscore-dep
+        GIT_TAG v3.0.0a
     )
 
     FetchContent_MakeAvailable(EDLib)
