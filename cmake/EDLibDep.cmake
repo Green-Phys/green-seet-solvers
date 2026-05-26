@@ -1,13 +1,16 @@
-
 function(add_edlib_dependency)
-    Include(FetchContent)
+    include(FetchContent)
+    # EDLib must build without ALPSCore — we use green-h5pp / green-params
+    # instead. cpp-arnoldi is pulled in transitively via EDLib.
+    set(EDLIB_WITH_ALPSCORE OFF CACHE BOOL "" FORCE)
+    # Don't build EDLib's own tests / examples when consuming it.
+    set(Testing  OFF CACHE BOOL "" FORCE)
+    set(Examples OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(
         EDLib
-        GIT_REPOSITORY https://github.com/Green-Phys/EDLib.git
-        GIT_TAG origin/master # or a later release
-        CMAKE_ARGS
-            -DARPACK_ROOT=${ARPACK_DIR}
+        GIT_REPOSITORY https://github.com/Q-Solvers/EDLib.git
+        GIT_TAG v3.0.0a
     )
 
     FetchContent_MakeAvailable(EDLib)

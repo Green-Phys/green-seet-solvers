@@ -1,0 +1,43 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build
+      run: |        
+        sudo apt-get update
+        sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev
+        sudo apt-get install libhdf5-serial-dev
+        sudo apt-get install libeigen3-dev
+        sudo apt-get install libopenblas-dev 
+        sudo apt-get install lcov
+
+        cmake -S . -B build -DBuild_Tests=ON -DCMAKE_CXX_FLAGS=" --coverage -fno-inline -fno-inline-small-functions -fno-default-inline -fprofile-arcs -ftest-coverage ";
+        cmake --build build -j 4;
+
+    - name: Test
+      run: |
+        cd build;
+        ctest -j1;
+    - name: Run coverage
+      run: |
+        cd build;
+        lcov --ignore-errors source,source --capture --directory . --output-file coverage.info;
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
