@@ -134,7 +134,7 @@ namespace seet {
       const std::string input = p["INPUT_FILE"].as<std::string>();
       green::h5pp::archive ar(input, "r");
 
-      b.Epsk = read_2d<double>(ar, "ModelData/Epsk/values");
+      b.Epsk = read_2d<double>(ar, "Bath/Epsk/values");
       if (static_cast<int>(b.Epsk.size()) != Ns - ml) {
         throw std::invalid_argument(
             "SIAM: bath levels + impurity orbitals != NSITES");
@@ -142,7 +142,7 @@ namespace seet {
 
       for (int im = 0; im < ml; ++im) {
         std::stringstream s;
-        s << "ModelData/Vk_" << im << "/values";
+        s << "Bath/Vk_" << im << "/values";
         b.Vk[im] = read_2d<double>(ar, s.str());
         s.str("");
         s << "H0_" << im << "/values";
